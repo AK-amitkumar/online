@@ -1,5 +1,83 @@
 $(document).ready(function () {
 
+    // Test if i can find the input field of the chkoutbox
+    $('.oe_website_sale').each(function () {
+        var oe_website_sale = this;
+
+        // Update Sales Order by CheckoutBox Inputs for One-Page Checkout
+        $(oe_website_sale).find("form input.js_quantity").on("change", function () {
+            console.log('Checkoutbox input changed');
+
+            // Store the input dom in a var
+            var $input = $(this);
+            // In case of already running update do nothing ;)
+            if ($input.data('update_change')) {
+                return;
+            };
+
+            // EXTRACT DATA FROM HTML
+            // Product Quantity
+            var value = parseInt($input.val(), 10);
+            if (isNaN(value)) value = 0;
+            console.log('Product Quantity (value): ' + value);
+            // Product ID(s) (in fact it is only one ID)
+            // HINT: The product.product is needed here!
+            // HINT: product id MUST BE an INT and not a string or you will get strange access errors in odoo
+            var product_id = parseInt($(oe_website_sale).find(".js_product input.product_id").val(), 10);
+            console.log('Product Id (value): ' + product_id);
+            var product_ids = [product_id];
+            console.log('Product Ids (parseInt): ' + product_ids);
+            // Get the sales order line ID
+            var line_id = parseInt($input.data('line-id'),10);
+            if (isNaN(line_id)) line_id = false;
+
+            // START UPDATE
+            // Prevent concurrent Updates
+            $input.data('update_change', true);
+
+            // update_json (update the Sale order)
+            openerp.jsonRpc("/shop/cart/update_json", 'call', {
+                'line_id': line_id,
+                'product_id': product_id,
+                'set_qty': value})
+                    .then(function (data) {
+                        // Remove Concurrent-Update Lock
+                        $input.data('update_change', false);
+                        // Value may be 0 (Quantity) and parseInt($input.val(), 10) may return NAN
+                        // I guess this means that if in the meantime the input was changed we
+                        // start again?
+                        if (value !== parseInt($input.val(), 10)) {
+                            console.log('Quantity of input was changed while processing update!');
+                            $input.trigger('change');
+                            return;
+                        }
+                        // Reload page if the quantity of the sale_order_line is None (Error case)
+                        if (!data.quantity) {
+                            console.log('Returned Data of /shop/cart/update_json has no .quantity attrib');
+                            location.reload(true);
+                            return;
+                        }
+                        console.log('!data.quantity: ' + !data.quantity);
+                        console.log('data.quantity: ' + data.quantity);
+
+                        // var $q = $(".my_cart_quantity");
+                        // $q.parent().parent().removeClass("hidden", !data.quantity);
+                        // $q.html(data.cart_quantity).hide().fadeIn(600);
+                        //
+                        // $input.val(data.quantity);
+                        // $('.js_quantity[data-line-id='+line_id+']').val(data.quantity).html(data.quantity);
+                        // $("#cart_total").replaceWith(data['website_sale.total']);
+                    });
+
+            //
+        });
+    });
+
+
+
+
+
+
     // Set Suggested Price by Buttons
     var $price_donate = $("#price_donate");
     var $price_suggested = $(".price_donate_suggested");

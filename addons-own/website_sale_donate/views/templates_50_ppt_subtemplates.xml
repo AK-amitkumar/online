@@ -119,7 +119,8 @@
                     <form t-att-action="keep(request.httprequest.path) if show_one_page_checkout else keep('/shop/cart/update')"
                           class="js_add_cart_variants"
                           method="POST"
-                          t-att-id="'wsd_checkout_form' if show_one_page_checkout else''">
+                          t-att-id="'wsd_checkout_form' if show_one_page_checkout else''"
+                          t-att-data-attribute_value_ids="product.product_variant_ids.ids">
 
                         <!-- Hidden input fields for cat and root cat -->
                         <input name="cat_root_id" t-att-value="category.cat_root_id.id if category else 'False'" type="hidden"/>
@@ -131,7 +132,10 @@
                             <t t-placeholder="select">
                                 <!-- Show Attribute Selectors (from website_sale.product) -->
                                 <t t-if="not product.variants_as_list">
-                                    <input type="hidden" class="product_id" name="product_id"
+                                    <!-- !!! This hidden element stores the id of the current selected product variant !!! -->
+                                    <input type="hidden"
+                                           class="product_id"
+                                           name="product_id"
                                            t-att-value="int(product.product_variant_ids[0]) if len(product.product_variant_ids) == 1 else '0'"/>
                                     <t t-call="website_sale.variants">
                                         <t t-set="ul_class" t-value="'nav-stacked'"/>

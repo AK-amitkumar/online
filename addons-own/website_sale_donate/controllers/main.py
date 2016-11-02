@@ -177,7 +177,9 @@ class website_sale_donate(website_sale):
     def cart_update(self, product_id, add_qty=1, set_qty=0, **kw):
         cr, uid, context = request.cr, request.uid, request.context
 
-        product = request.registry['product.product'].browse(cr, SUPERUSER_ID, int(product_id), context=context)
+        product_id = int(product_id)
+
+        product = request.registry['product.product'].browse(cr, SUPERUSER_ID, product_id, context=context)
 
         # Redirect to the calling page (referrer) if the browser has added it
         # HINT: Not every browser adds the referrer to the header

@@ -424,7 +424,9 @@ class sale_order(osv.Model):
 
         # Set the Quantity always to 1 or 0 if hide_quantity is set
         # HINT: We have to use product.product NOT product.temaplate beacuse it could be a product variant
-        #       _cart_update always gets the product.product id !!! from the template!
+        #       _cart_update always expects the product.product id from the html-template by the java script
+        # ATTENTION: !!! If product_id is a string and not an int or list STRANGE THINGS will happen!
+        #            So make sure it is an int!
         if self.pool.get('product.product').browse(cr, SUPERUSER_ID, product_id, context=context).hide_quantity:
             if add_qty >= 0:
                 set_qty = 1
