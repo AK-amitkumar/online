@@ -29,6 +29,7 @@ $(document).ready(function () {
             console.log('Product Ids (parseInt): ' + product_ids);
             // Get the sales order line ID
             var line_id = parseInt($input.data('line-id'),10);
+            console.log('SaleOrderLine ID (parseInt): ' + line_id);
             if (isNaN(line_id)) line_id = false;
 
             // START UPDATE

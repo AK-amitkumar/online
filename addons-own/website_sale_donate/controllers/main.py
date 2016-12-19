@@ -30,7 +30,7 @@ class website_sale_donate(website_sale):
     def _get_payment_interval_id(self, product):
         payment_interval_id = False
 
-        # 1. Website-Settings global default payment interval
+        # 1. LOWEST: Website-Settings global default payment interval
         if request.website.payment_interval_default:
             payment_interval_id = request.website.payment_interval_default.id
         # 2. DEPRECATED! (but still there for old database-backups compatibility)
@@ -39,7 +39,7 @@ class website_sale_donate(website_sale):
         # 3. Products first payment_interval_line id
         if product.payment_interval_lines_ids:
             payment_interval_id = product.payment_interval_lines_ids[0].payment_interval_id.id
-        # 4. Products default payment interval
+        # 4. HIGHEST: Products default payment interval
         if product.payment_interval_default:
             payment_interval_id = product.payment_interval_default.id
 
@@ -61,6 +61,12 @@ class website_sale_donate(website_sale):
     # /shop/product/<model("product.template"):product>
     @http.route()
     def product(self, product, category='', search='', **kwargs):
+        # Catch any invalid string for category like "False", "false", "None" ...
+        try:
+            category = int(category)
+        except ValueError:
+            category = ''
+            pass
 
         # Store the current request url in the session for possible returns
         # INFO: html escaping is done by request.redirect so not needed here!
@@ -70,15 +76,19 @@ class website_sale_donate(website_sale):
 
         cr, uid, context = request.cr, request.uid, request.context
 
-        # One-Page-Checkout: call cart_update
+        # One-Page-Checkout: call cart_update after the form is sent
+        # CHANGE: !!! Always add the product to the cart for one Page Checkout !!!
         # HINT: This is needed since the regular route cart_update is not called in case of one-page-checkout
-        if request.httprequest.method == 'POST' \
-                and product.product_page_template == u'website_sale_donate.ppt_opc' \
+        #if request.httprequest.method == 'POST' \
+        if product.product_page_template == u'website_sale_donate.ppt_opc' \
                 and 'json_cart_update' not in request.session:
-            # Create or Update sales Order
+            # Create or update the sales order
+            # always add the current product
             # and set the Quantity to the value of the qty selector in the checkoutbox
-            if 'add_qty' in kwargs and not 'set_qty' in kwargs:
-                kwargs['set_qty'] = kwargs['add_qty']
+            if not 'set_qty' in kwargs:
+                # Use add_qty for set_qty else use 1
+                kwargs['set_qty'] = kwargs.get('add_qty', 1)
+            # TODO: check what happens to variants
             if not kwargs.get('product_id'):
                 kwargs['product_id'] = product.id
             self.cart_update(**kwargs)
@@ -282,6 +292,10 @@ class website_sale_donate(website_sale):
     @http.route()
     def cart_update_json(self, product_id, line_id, add_qty=None, set_qty=None, display=True):
         request.session['json_cart_update'] = 'True'
+
+        # For OPC Product Page Quantity Updates in the Checkout Box:
+        line_id = None if line_id in [False, 'false', 'False'] else line_id
+
         return super(website_sale_donate, self).cart_update_json(product_id, line_id,
                                                                  add_qty=add_qty, set_qty=set_qty, display=display)
 
